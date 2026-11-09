@@ -1,0 +1,153 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Freedom Tribe Flyer Generator</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#f7f0e4;color:#06452f;font-family:Arial,sans-serif}
+main{max-width:480px;margin:auto;padding:24px 18px}
+h1{text-align:center;font-family:Georgia,serif;font-style:italic}
+p{text-align:center;line-height:1.5}
+label{display:block;font-weight:bold;margin:18px 0 7px}
+input{width:100%;padding:14px;border:1px solid #c9a05b;border-radius:9px;font-size:16px;background:white}
+button{width:100%;padding:16px;margin-top:16px;border:0;border-radius:10px;background:#06452f;color:white;font-size:17px;font-weight:bold}
+button:disabled{opacity:.5}
+#status{text-align:center;font-size:14px;margin:15px 0}
+canvas{display:block;width:100%;height:auto;margin:20px 0;border-radius:8px}
+#download{display:none;background:#bd914e}
+</style>
+</head>
+<body>
+<main>
+<h1>The Freedom Tribe</h1>
+<p>Create your personalised 72-Hour Sales Challenge flyer.</p>
+
+<label>Your photograph</label>
+<input id="photo" type="file" accept="image/*">
+
+<label>Your full name</label>
+<input id="name" placeholder="Enter your name">
+
+<label>WhatsApp number (optional)</label>
+<input id="phone" type="tel" placeholder="Enter WhatsApp number">
+
+<button id="generate">Generate My Flyer</button>
+<div id="status"></div>
+<canvas id="flyer" width="1080" height="1080"></canvas>
+<button id="download">Download Square Flyer</button>
+</main>
+
+<script type="module">
+const $=id=>document.getElementById(id);
+const canvas=$("flyer"),ctx=canvas.getContext("2d");
+let result=null;
+
+function text(t,x,y,size,color="#06452f",weight="bold",font="Arial"){
+ctx.fillStyle=color;
+ctx.font=`${weight} ${size}px ${font}`;
+ctx.textAlign="center";
+ctx.fillText(t,x,y);
+}
+function round(x,y,w,h,r,fill,stroke=null){
+ctx.beginPath();
+ctx.roundRect(x,y,w,h,r);
+ctx.fillStyle=fill;ctx.fill();
+if(stroke){ctx.strokeStyle=stroke;ctx.lineWidth=4;ctx.stroke();}
+}
+function fitText(t,x,y,maxWidth,size){
+ctx.font=`bold ${size}px Arial`;
+while(ctx.measureText(t).width>maxWidth&&size>17){
+size--;ctx.font=`bold ${size}px Arial`;
+}
+text(t,x,y,size);
+}
+async function imageFromBlob(blob){
+return new Promise((resolve,reject)=>{
+const img=new Image();
+img.onload=()=>{URL.revokeObjectURL(img.src);resolve(img)};
+img.onerror=reject;
+img.src=URL.createObjectURL(blob);
+});
+}
+function crop(img,x,y,w,h){
+const ratio=Math.min(w/img.width,h/img.height);
+const iw=img.width*ratio,ih=img.height*ratio;
+ctx.drawImage(img,x+(w-iw)/2,y+h-ih,iw,ih);
+}
+function design(img){
+const W=1080,H=1080;
+const bg=ctx.createLinearGradient(0,0,0,H);
+bg.addColorStop(0,"#f8ecd9");
+bg.addColorStop(1,"#fff8ee");
+ctx.fillStyle=bg;ctx.fillRect(0,0,W,H);
+
+text("The Freedom Tribe",765,105,58,"#06452f","italic","Georgia");
+ctx.beginPath();ctx.moveTo(570,124);
+ctx.quadraticCurveTo(770,150,1010,123);
+ctx.strokeStyle="#c99f5b";ctx.lineWidth=4;ctx.stroke();
+
+text("72-HOUR",788,272,86);
+const gold=ctx.createLinearGradient(550,0,1050,0);
+gold.addColorStop(0,"#f7dca4");
+gold.addColorStop(1,"#bd8d48");
+round(545,307,505,130,7,gold);
+text("SALES",795,408,110);
+text("CHALLENGE",792,502,62);
+
+ctx.save();
+ctx.beginPath();ctx.roundRect(22,65,485,945,25);ctx.clip();
+crop(img,22,65,485,945);
+ctx.restore();
+
+round(460,585,590,190,32,"#06452f","#c99f5b");
+text("🛒",523,705,65,"white");
+ctx.fillStyle="#c99f5b";ctx.fillRect(612,615,4,135);
+text("SHOP SOMETHING",831,675,47,"white");
+text("FROM ME!",831,732,51,"white");
+
+round(525,823,520,93,48,"#fff9ef","#c99f5b");
+fitText($("name").value.trim(),785,881,460,39);
+
+round(525,935,520,93,48,"#fff9ef","#c99f5b");
+fitText($("phone").value.trim()||" ",785,992,460,40);
+}
+$("generate").onclick=async()=>{
+const file=$("photo").files[0];
+if(!file||!$("name").value.trim()){
+$("status").textContent="Please upload a photo and enter your name.";
+return;
+}
+$("generate").disabled=true;
+$("status").textContent="Preparing your photograph. This may take a little while...";
+try{
+const {removeBackground}=await import("https://esm.sh/@imgly/background-removal@1.7.0");
+const blob=await removeBackground(file,{
+progress:(key,current,total)=>{
+if(total)$("status").textContent="Removing background: "+Math.round(current/total*100)+"%";
+}
+});
+const img=await imageFromBlob(blob);
+design(img);
+result=canvas.toDataURL("image/png");
+$("download").style.display="block";
+$("status").textContent="Your flyer is ready!";
+}catch(e){
+console.error(e);
+$("status").textContent="Background removal failed. Please check your internet connection and try again.";
+}finally{
+$("generate").disabled=false;
+}
+};
+$("download").onclick=()=>{
+if(!result)return;
+const a=document.createElement("a");
+a.href=result;
+a.download="freedom-tribe-sales-flyer.png";
+document.body.appendChild(a);a.click();a.remove();
+};
+</script>
+</body>
+</html>
