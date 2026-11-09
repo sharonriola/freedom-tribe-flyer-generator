@@ -102,7 +102,9 @@ text("CHALLENGE",792,502,62);
 
 ctx.save();
 ctx.beginPath();ctx.roundRect(22,65,485,945,25);ctx.clip();
-crop(img,22,65,485,945);
+const scale = Math.max(485/img.width,945/img.height);
+const sw = 485/scale, sh = 945/scale;
+ctx.drawImage(img,(img.width-sw)/2,(img.height-sh)/2,sw,sh,22,65,485,945);
 ctx.restore();
 
 round(460,585,590,190,32,"#06452f","#c99f5b");
@@ -126,13 +128,10 @@ return;
 $("generate").disabled=true;
 $("status").textContent="Preparing your photograph. This may take a little while...";
 try{
-const {removeBackground}=await import("https://esm.sh/@imgly/background-removal@1.7.0");
-const blob=await removeBackground(file,{
-progress:(key,current,total)=>{
-if(total)$("status").textContent="Removing background: "+Math.round(current/total*100)+"%";
-}
-});
-const img=await imageFromBlob(blob);
+
+const img = await imageFromBlob(file);
+$("status").textContent = "Creating your flyer...";
+
 design(img);
 result=canvas.toDataURL("image/png");
 $("download").style.display="block";
