@@ -72,11 +72,14 @@ img.onerror=reject;
 img.src=URL.createObjectURL(blob);
 });
 }
+
 function crop(img,x,y,w,h){
-const ratio=Math.min(w/img.width,h/img.height);
-const iw=img.width*ratio,ih=img.height*ratio;
-ctx.drawImage(img,x+(w-iw)/2,y+h-ih,iw,ih);
+  const scale = Math.min(w/img.width,h/img.height)*2.7;
+  const iw = img.width*scale;
+  const ih = img.height*scale;
+  ctx.drawImage(img,x+(w-iw)/2,y+h-ih,iw,ih);
 }
+
 function design(img){
 const W=1080,H=1080;
 const bg=ctx.createLinearGradient(0,0,0,H);
